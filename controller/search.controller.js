@@ -26,12 +26,25 @@ const uploadParams = {
 // s3.uploadParams = uploadParams;
 
 const cache = new LRU({
-  maxAge: -1,
+  maxAge: 0,
   max: 500000000000,
   length: (label) => {
     return label.length * 100;
   },
 });
+
+function compareObjects(object1, object2, key) {
+  const obj1 = object1['labels'][key].Confidance;
+  const obj2 = object2['labels'][key].Confidance;
+
+  if (obj1 > obj2) {
+    return -1
+  }
+  if (obj1 < obj2) {
+    return 1
+  }
+  return 0
+}
 
 // Get a image search by label
 exports.getSearchResult = async (req, res, next) => {
@@ -41,22 +54,17 @@ exports.getSearchResult = async (req, res, next) => {
     AWS.config.update(config.aws_remote_config);
   }
   let label = req.query.label;
-
   // Find in cache
   let getItemFromCache = cache.get(label);
-  if (getItemFromCache && getItemFromCache !== undefined) {
+  if (getItemFromCache && getItemFromCache !== undefined) {    
     return Response(res, true, MESSAGE.RECORD_RETRIVED, getItemFromCache);
   } else {
-
     // Find in DB
-    const docClient = new AWS.DynamoDB.DocumentClient();
-    const params = {
-      TableName: tables.IMAGES,
-      FilterExpression: "contains (labels, :label)",
-      ExpressionAttributeValues: {
-        ":label": label,
-      },
-    };
+     const docClient = new AWS.DynamoDB.DocumentClient();
+     const params = {  
+        "TableName": tables.IMAGES,
+        "FilterExpression": "(attribute_exists(labels."+label+") )"      
+      }
 
     docClient.scan(params, function (err, data) {
       if (err) {
@@ -66,7 +74,11 @@ exports.getSearchResult = async (req, res, next) => {
         for (let i = 0; i < Items.length; i++) {
           if (Items[i].file_name !== undefined)
             Items[i].url = config.awsS3BaseUrl + "" + Items[i].file_name ?? "";
-        }
+        }   
+      Items.sort((item1, item2) => {
+            return compareObjects(item1, item2, label)
+          });
+
         cache.set(label, Items);
         return Response(res, true, MESSAGE.RECORD_RETRIVED, Items);
       }
