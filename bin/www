@@ -5,14 +5,14 @@
  */
 
 const app = require('../app');
-const debug = require('debug')('ta-backend:server');
+const debug = require('debug')('SearchMcroService:server');
 const http = require('http');
 
 /**
  * Get port from environment and store in Express.
  */
 
-const port = normalizePort(process.env.PORT || '3000');
+const port = normalizePort(process.env.PORT || '3002');
 console.log("Server running on: ",port);
 app.set('port', port);
 
