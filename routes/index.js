@@ -11,5 +11,6 @@ const app = express();
 app.use(cors());
 
 router.get("/api/search", search.getSearchResult);
+router.post("/api/filter", search.getFilterResults);
 
 module.exports = router;

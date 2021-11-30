@@ -7,7 +7,10 @@ const cookieParser = require('cookie-parser');
 const createError = require('http-errors');
 require('dotenv').config();
 var indexRouter = require('./routes/index');
-const ejs = require('ejs')
+const ejs = require('ejs');
+const logger = require('morgan');
+
+app.use(logger('dev'));
 
 //console.log = function() {}
 
