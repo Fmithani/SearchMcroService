@@ -63,8 +63,11 @@ exports.getSearchResult = async (req, res, next) => {
     const docClient = new AWS.DynamoDB.DocumentClient();
     const params = {
       TableName: tables.IMAGES,
-      FilterExpression:
-        "(attribute_exists(labels." + label + ") ) and contains (#tag, :post)",
+      FilterExpression: "attribute_exists(#key.#keyval)",
+      ExpressionAttributeNames: {
+        "#key":"labels",
+        "#keyval":label
+      }
     };
 
     docClient.scan(params, function (err, data) {
@@ -75,6 +78,7 @@ exports.getSearchResult = async (req, res, next) => {
         for (let i = 0; i < Items.length; i++) {
           if (Items[i].file_name !== undefined)
             Items[i].url = config.awsS3BaseUrl + "" + Items[i].file_name ?? "";
+            Items[i].search_label = label;
         }
         Items.sort((item1, item2) => {
           return compareObjects(item1, item2, label);
@@ -153,14 +157,14 @@ exports.getFilterResults = async (req, res, next) => {
       let _max_price = _body.price.max;
 
       if (_min_price != undefined) {
-        _filter_expression = _filter_expression + ' and #f_price_min > :v_price_min ';
+        _filter_expression = _filter_expression + ' and #f_price_min <= :v_price_min ';
         _attribute_field["#f_price_min"] = "price";
         _attribute_value[":v_price_min"] = _min_price;
       }
 
       if (_max_price != undefined) 
       {  
-        _filter_expression = _filter_expression + ' and #f_price_max < :v_price_max ';
+        _filter_expression = _filter_expression + ' and #f_price_max >= :v_price_max ';
         _attribute_field["#f_price_max"] = "price";
         _attribute_value[":v_price_max"] = _max_price;
       }
